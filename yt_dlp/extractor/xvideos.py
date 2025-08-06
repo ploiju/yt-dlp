@@ -22,6 +22,9 @@ class XVideosIE(InfoExtractor):
                         )
                         (?P<id>[0-9a-z]+)
                     '''
+    
+    _EMBED_REGEX = [r'<iframe[^>]+?src=["\'](?P<url>(?:https?:)?//(?:www\.)?xvideos\.com/embedframe/[\da-z]+)']
+    
     _TESTS = [{
         'url': 'http://xvideos.com/video.ucuvbkfda4e/a_beautiful_red-haired_stranger_was_refused_but_still_came_to_my_room_for_sex',
         'md5': '396255a900a6bddb3e98985f0b86c3fd',
