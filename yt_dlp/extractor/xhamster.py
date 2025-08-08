@@ -20,13 +20,14 @@ from ..utils import (
 
 
 class XHamsterIE(InfoExtractor):
-    _DOMAINS = r'(?:xhamster\.(?:com|one|desi)|xhms\.pro|xhamster\d+\.(?:com|desi)|xhday\.com|xhvid\.com|xh\.partners|xh\.video|xhchannel\.com|xhamster43\.desi)'
+    _DOMAINS = r'(?:xhamster\.(?:com|one|desi)|xhms\.pro|xhamster\d+\.(?:com|desi)|xhday\.com|xhvid\.com|xh\.partners|xh\.video|xhchannel\.com)'
     _VALID_URL = rf'''(?x)
                     https?://
                         (?:[^/?#]+\.)?{_DOMAINS}/
                         (?:
                             movies/(?P<id>[\dA-Za-z]+)/(?P<display_id>[^/]*)\.html|
-                            videos/(?P<display_id_2>[^/]*)-(?P<id_2>[\dA-Za-z]+)
+                            videos/(?P<display_id_2>[^/]*)-(?P<id_2>[\dA-Za-z]+)|
+                            embed/(?P<id_3>\d+)
                         )
                     '''
     _TESTS = [{
@@ -142,7 +143,7 @@ class XHamsterIE(InfoExtractor):
 
     def _real_extract(self, url):
         mobj = self._match_valid_url(url)
-        video_id = mobj.group('id') or mobj.group('id_2')
+        video_id = mobj.group('id') or mobj.group('id_2') or mobj.group('id_3')
         display_id = mobj.group('display_id') or mobj.group('display_id_2')
 
         desktop_url = re.sub(r'^(https?://(?:.+?\.)?)m\.', r'\1', url)
@@ -167,8 +168,12 @@ class XHamsterIE(InfoExtractor):
                 default='{}'),
             video_id, fatal=False)
         if initials:
-            video = initials['videoModel']
-            title = video['title']
+            if 'videoModel' in initials:
+                video = initials['videoModel']
+                title = video['title']
+            else:
+                video = {}
+                title = None
             formats = []
             format_urls = set()
             format_sizes = {}
@@ -201,6 +206,11 @@ class XHamsterIE(InfoExtractor):
                             'Referer': urlh.url,
                         },
                     })
+
+            if title is None:
+                xplayer_plugin_settings = try_get(
+                initials, lambda x: x['xplayerPluginSettings'], dict)
+                title = xplayer_plugin_settings['hover']['videoTitle']
             xplayer_sources = try_get(
                 initials, lambda x: x['xplayerSettings']['sources'], dict)
             if xplayer_sources:
@@ -391,7 +401,7 @@ class XHamsterEmbedIE(InfoExtractor):
         https?://(?:[^/?#]+\.)?{XHamsterIE._DOMAINS}/
         (?:
             xembed\.php\?video=(?P<id>\d+)|
-            [ep]/(?P<id_2>[A-Za-z0-9]+)
+            [ep]/(?P<id_2>[A-Za-z0-9-]+)
         )
     '''
     _EMBED_REGEX = [
@@ -445,49 +455,18 @@ class XHamsterEmbedIE(InfoExtractor):
         mobj = self._match_valid_url(url)
         video_id = mobj.group('id') or mobj.group('id_2') or mobj.group('id_3')
 
-        # Download webpage and get the final URL after redirects
-        webpage, urlh = self._download_webpage_handle(url, video_id)
-        final_url = urlh.url
+        webpage = self._download_webpage(url, video_id)
 
-        # Try multiple patterns to find the actual video URL
+        
         video_url = self._search_regex(
-        [
-            # Original pattern for traditional embeds
-            rf'href="(https?://xhamster\.com/(?:movies/{video_id}/[^"]*\.html|videos/[^/]*-{video_id})[^"]*)"',
-            # Look for any xhamster video URL
-            r'href="(https?://xhamster\.com/videos/[^"]+)"',
-            r'href="(https?://xhamster\.com/movies/[^"]+)"',
-            # NEW: Handle xhchannel.com domain
-            r'href="(https?://xhchannel\.com/videos/[^"]+)"',
-            r'href="(https?://xhchannel\.com/movies/[^"]+)"',
-            r'href="(https?://xhamster43\.desi/[^"]+)"',
-            # Look for redirects or meta tags
-            r'(?:location\.href|window\.location)\s*=\s*["\']([^"\']*(?:xhamster|xhchannel)\.com[^"\']*)["\']',
-            r'<meta[^>]+property=["\']og:url["\'][^>]+content=["\']([^"\']*(?:xhamster|xhchannel)\.com[^"\']*)["\']',
-            r'<link[^>]+rel=["\']canonical["\'][^>]+href=["\']([^"\']*(?:xhamster|xhchannel)\.com[^"\']*)["\']',
-            # General xhamster/xhchannel URL pattern
-            r'(https?://(?:xhamster|xhchannel)\.com/[^\s"\'<>]+)',
-            # NEW: Look for iframe src or data attributes that might contain the video URL
-            r'<iframe[^>]+src=["\']([^"\']*(?:xhamster|xhchannel)\.com[^"\']*)["\']',
-            r'data-video-url=["\']([^"\']*(?:xhamster|xhchannel)\.com[^"\']*)["\']',
-            # NEW: Look for JavaScript variables that might contain the URL
-            r'videoUrl\s*[=:]\s*["\']([^"\']*(?:xhamster|xhchannel)\.com[^"\']*)["\']',
-            r'video_url\s*[=:]\s*["\']([^"\']*(?:xhamster|xhchannel)\.com[^"\']*)["\']',
-        ],
-        webpage, 'xhamster url', default=None)
+            rf'href="(https?://{XHamsterIE._DOMAINS}/(?:movies/{video_id}/[^"]*\.html|videos/[^/"]*))[^"]*"',
+            webpage, 'xhamster url', default=None)
 
         if not video_url:
-            # Try the original vars method as fallback
-            try:
-                player_vars = self._parse_json(
-                    self._search_regex(r'vars\s*:\s*({.+?})\s*,\s*\n', webpage, 'vars'),
-                    video_id)
-                video_url = dict_get(player_vars, ('downloadLink', 'homepageLink', 'commentsLink', 'shareUrl'))
-            except:
-                # If all else fails, check if the final URL itself is a valid xhamster URL
-                if 'xhamster.com' in final_url and final_url != url:
-                    video_url = final_url
-
+            player_vars = self._parse_json(
+                self._search_regex(r'vars\s*:\s*({.+?})\s*,\s*\n', webpage, 'vars'),
+                video_id)
+            video_url = dict_get(player_vars, ('downloadLink', 'homepageLink', 'commentsLink', 'shareUrl'))
 
         return self.url_result(video_url, 'XHamster')
 
