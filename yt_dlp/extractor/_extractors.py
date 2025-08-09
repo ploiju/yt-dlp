@@ -1018,6 +1018,7 @@ from .lefigaro import (
 from .lego import LEGOIE
 from .lemonde import LemondeIE
 from .lenta import LentaIE
+from .letmejerk import LetMeJerkIE
 from .libraryofcongress import LibraryOfCongressIE
 from .libsyn import LibsynIE
 from .lifenews import (
