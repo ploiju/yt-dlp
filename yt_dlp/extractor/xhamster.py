@@ -209,7 +209,7 @@ class XHamsterIE(InfoExtractor):
 
             if title is None:
                 xplayer_plugin_settings = try_get(
-                initials, lambda x: x['xplayerPluginSettings'], dict)
+                    initials, lambda x: x['xplayerPluginSettings'], dict)
                 title = xplayer_plugin_settings['hover']['videoTitle']
             xplayer_sources = try_get(
                 initials, lambda x: x['xplayerSettings']['sources'], dict)
@@ -457,7 +457,6 @@ class XHamsterEmbedIE(InfoExtractor):
 
         webpage = self._download_webpage(url, video_id)
 
-        
         video_url = self._search_regex(
             rf'href="(https?://{XHamsterIE._DOMAINS}/(?:movies/{video_id}/[^"]*\.html|videos/[^/"]*))[^"]*"',
             webpage, 'xhamster url', default=None)
