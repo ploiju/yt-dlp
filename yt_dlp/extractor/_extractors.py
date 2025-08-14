@@ -411,6 +411,7 @@ from .cnn import (
     CNNIE,
     CNNIndonesiaIE,
 )
+from .colegialasdeverdad import ColegialasdeVerdadIE
 from .comedycentral import (
     ComedyCentralIE,
     ComedyCentralTVIE,
