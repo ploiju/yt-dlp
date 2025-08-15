@@ -1735,6 +1735,7 @@ from .rinsefm import (
     RinseFMIE,
 )
 from .rmcdecouverte import RMCDecouverteIE
+from .roadsexe import RoadSexeIE
 from .rockstargames import RockstarGamesIE
 from .rokfin import (
     RokfinChannelIE,
