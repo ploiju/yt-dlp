@@ -926,6 +926,7 @@ from .jiosaavn import (
     JioSaavnShowPlaylistIE,
     JioSaavnSongIE,
 )
+from .jizzbunker import JizzbunkerIE
 from .joj import JojIE
 from .jove import JoveIE
 from .jstream import JStreamIE
