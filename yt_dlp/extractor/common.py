@@ -3359,9 +3359,22 @@ class InfoExtractor:
                 return f
             return {}
 
+        def _is_malformed_url(url):
+            """Check if URL appears to be malformed JavaScript code"""
+            # Only filter obvious JavaScript code fragments that shouldn't be URLs
+            js_fragments = [
+                "'+(", "'+$(", '$(', '.attr(', 'javascript:', 'void(0)',
+            ]
+            return any(fragment in url for fragment in js_fragments)
+
         def _media_formats(src, cur_media_type, type_info=None):
             type_info = type_info or {}
             full_url = absolute_url(src)
+
+            # Skip malformed JavaScript URLs
+            if _is_malformed_url(full_url):
+                return False, []
+
             ext = type_info.get('ext') or determine_ext(full_url)
             if ext == 'm3u8':
                 is_plain_url = False
