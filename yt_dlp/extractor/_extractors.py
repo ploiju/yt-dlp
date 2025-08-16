@@ -1599,6 +1599,7 @@ from .pornhub import (
     PornHubUserIE,
     PornHubUserVideosUploadIE,
 )
+from .pornoamateurlatino import PornoAmateurLatinoIE
 from .pornotube import PornotubeIE
 from .pornovoisines import PornoVoisinesIE
 from .pornoxo import PornoXOIE
