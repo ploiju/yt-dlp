@@ -1481,6 +1481,7 @@ from .packtpub import (
     PacktPubCourseIE,
     PacktPubIE,
 )
+from .pahindot import PahindotIE
 from .palcomp3 import (
     PalcoMP3ArtistIE,
     PalcoMP3IE,
