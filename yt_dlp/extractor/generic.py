@@ -753,14 +753,22 @@ class GenericIE(InfoExtractor):
         url_keys = list(filter(re.compile(r'^video_(?:url|alt_url\d*)$').match, flashvars.keys()))
         formats = []
         for key in url_keys:
-            if '/get_file/' not in flashvars[key]:
-                continue
+            video_url = flashvars[key]
             format_id = flashvars.get(f'{key}_text', key)
+
+            # Handle both direct URLs and obfuscated KVS URLs
+            if '/get_file/' in video_url:
+                # Obfuscated URL - needs deobfuscation
+                final_url = urljoin(url, self._kvs_get_real_url(video_url, flashvars['license_code']))
+            else:
+                # Direct URL - use as-is
+                final_url = urljoin(url, video_url)
+
             formats.append({
-                'url': urljoin(url, self._kvs_get_real_url(flashvars[key], flashvars['license_code'])),
+                'url': final_url,
                 'format_id': format_id,
                 'ext': 'mp4',
-                **(parse_resolution(format_id) or parse_resolution(flashvars[key])),
+                **(parse_resolution(format_id) or parse_resolution(video_url)),
                 'http_headers': {'Referer': url},
             })
             if not formats[-1].get('height'):
